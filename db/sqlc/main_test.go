@@ -6,19 +6,21 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hykura1501/simple_bank/ulti"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var testQueries *Queries
 var testDB *pgxpool.Pool
 
-const (
-	dbSource = "postgresql://root:root@localhost:5432/simple_bank?sslmode=disable"
-)
-
 func TestMain(m *testing.M) {
 	var err error
-	testDB, err = pgxpool.New(context.Background(), dbSource)
+	config, err := ulti.LoadConfig("../../")
+
+	if err != nil {
+		log.Fatalf("fail to load the configuration %s", err.Error())
+	}
+	testDB, err = pgxpool.New(context.Background(), config.DBSource)
 	if err != nil {
 		log.Fatal("cannot connect to db:", err)
 	}
