@@ -1,12 +1,12 @@
 package api
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	db "github.com/hykura1501/simple_bank/db/sqlc"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type createAccountRequest struct {
@@ -27,9 +27,16 @@ func (server *Server) createAccount(ctx *gin.Context) {
 		Balance:  0,
 	}
 
-	account, err := server.store.CreateAccount(context.Background(), arg)
+	account, err := server.store.CreateAccount(ctx, arg)
 
 	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok {
+			switch pgErr.ConstraintName {
+			case "owner_username_fk", "owner_currency_key":
+				ctx.JSON(http.StatusForbidden, errorResponse(pgErr))
+				return
+			}
+		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
@@ -49,7 +56,7 @@ func (server *Server) getAccount(ctx *gin.Context) {
 
 	id := req.ID
 
-	account, err := server.store.GetAccount(context.Background(), id)
+	account, err := server.store.GetAccount(ctx, id)
 
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -81,7 +88,7 @@ func (server *Server) listAccount(ctx *gin.Context) {
 		Offset: (req.Page - 1) * req.PageSize,
 	}
 
-	accounts, err := server.store.ListAccounts(context.Background(), arg)
+	accounts, err := server.store.ListAccounts(ctx, arg)
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))

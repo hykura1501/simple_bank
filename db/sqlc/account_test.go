@@ -4,16 +4,17 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hykura1501/simple_bank/ulti"
+	"github.com/hykura1501/simple_bank/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 )
 
 func createRandomAccount(t *testing.T) Account {
+	user := createRandomUser(t)
 	arg := CreateAccountParams{
-		Owner:    ulti.RandomOwner(),
-		Balance:  ulti.RandomMoney(),
-		Currency: ulti.RandomCurrency(),
+		Owner:    user.Username,
+		Balance:  util.RandomMoney(),
+		Currency: util.RandomCurrency(),
 	}
 	account, err := testQueries.CreateAccount(context.Background(), arg)
 	require.NoError(t, err)
@@ -24,7 +25,7 @@ func createRandomAccount(t *testing.T) Account {
 	require.Equal(t, arg.Currency, account.Currency)
 
 	require.NotZero(t, account.ID)
-	require.NotZero(t, account.CreateAt)
+	require.NotZero(t, account.CreatedAt)
 
 	return account
 }
@@ -44,7 +45,7 @@ func TestGetAccount(t *testing.T) {
 	require.Equal(t, acc1.Owner, acc2.Owner)
 	require.Equal(t, acc1.Balance, acc2.Balance)
 	require.Equal(t, acc1.Currency, acc2.Currency)
-	require.Equal(t, acc1.CreateAt, acc2.CreateAt)
+	require.Equal(t, acc1.CreatedAt, acc2.CreatedAt)
 }
 
 func TestUpdateAccont(t *testing.T) {
@@ -52,7 +53,7 @@ func TestUpdateAccont(t *testing.T) {
 
 	arg := UpdateAccountParams{
 		ID:      acc1.ID,
-		Balance: ulti.RandomMoney(),
+		Balance: util.RandomMoney(),
 	}
 
 	acc2, err := testQueries.UpdateAccount(context.Background(), arg)
@@ -64,7 +65,7 @@ func TestUpdateAccont(t *testing.T) {
 	require.Equal(t, acc1.Owner, acc2.Owner)
 	require.Equal(t, arg.Balance, acc2.Balance)
 	require.Equal(t, acc1.Currency, acc2.Currency)
-	require.Equal(t, acc1.CreateAt, acc2.CreateAt)
+	require.Equal(t, acc1.CreatedAt, acc2.CreatedAt)
 }
 
 func TestDeleteAccount(t *testing.T) {

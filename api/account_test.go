@@ -13,7 +13,7 @@ import (
 	"github.com/golang/mock/gomock"
 	mockdb "github.com/hykura1501/simple_bank/db/mock"
 	db "github.com/hykura1501/simple_bank/db/sqlc"
-	"github.com/hykura1501/simple_bank/ulti"
+	"github.com/hykura1501/simple_bank/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 )
@@ -294,10 +294,10 @@ func TestListAccountAPI(t *testing.T) {
 
 func randomAccount() db.Account {
 	return db.Account{
-		ID:       ulti.RandomInt(1, 1000),
-		Owner:    ulti.RandomOwner(),
-		Balance:  ulti.RandomMoney(),
-		Currency: ulti.RandomCurrency(),
+		ID:       util.RandomInt(1, 1000),
+		Owner:    util.RandomOwner(),
+		Balance:  util.RandomMoney(),
+		Currency: util.RandomCurrency(),
 	}
 }
 

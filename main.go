@@ -6,12 +6,12 @@ import (
 
 	"github.com/hykura1501/simple_bank/api"
 	db "github.com/hykura1501/simple_bank/db/sqlc"
-	"github.com/hykura1501/simple_bank/ulti"
+	"github.com/hykura1501/simple_bank/util"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
-	config, err := ulti.LoadConfig(".")
+	config, err := util.LoadConfig(".")
 
 	if err != nil {
 		log.Fatalf("fail to load the configuration %s", err.Error())

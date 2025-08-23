@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hykura1501/simple_bank/ulti"
+	"github.com/hykura1501/simple_bank/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +16,7 @@ func createRandomTransfer(t *testing.T) Transfer {
 	arg := CreateTransferParams{
 		FromAccountID: acc1.ID,
 		ToAccountID:   acc2.ID,
-		Amount:        ulti.RandomMoney(),
+		Amount:        util.RandomMoney(),
 	}
 
 	trans, err := testQueries.CreateTransfer(context.Background(), arg)
@@ -28,7 +28,7 @@ func createRandomTransfer(t *testing.T) Transfer {
 	require.Equal(t, arg.Amount, trans.Amount)
 
 	require.NotZero(t, trans.ID)
-	require.NotZero(t, trans.CreateAt)
+	require.NotZero(t, trans.CreatedAt)
 
 	return trans
 }
@@ -48,7 +48,7 @@ func TestGetTransfer(t *testing.T) {
 	require.Equal(t, trans1.FromAccountID, trans2.FromAccountID)
 	require.Equal(t, trans1.ToAccountID, trans2.ToAccountID)
 	require.Equal(t, trans1.Amount, trans2.Amount)
-	require.Equal(t, trans1.CreateAt, trans2.CreateAt)
+	require.Equal(t, trans1.CreatedAt, trans2.CreatedAt)
 }
 
 func TestUpdateTransfer(t *testing.T) {
@@ -56,7 +56,7 @@ func TestUpdateTransfer(t *testing.T) {
 
 	arg := UpdateTransferParams{
 		ID:     trans1.ID,
-		Amount: ulti.RandomMoney(),
+		Amount: util.RandomMoney(),
 	}
 
 	trans2, err := testQueries.UpdateTransfer(context.Background(), arg)
@@ -68,7 +68,7 @@ func TestUpdateTransfer(t *testing.T) {
 	require.Equal(t, trans1.FromAccountID, trans2.FromAccountID)
 	require.Equal(t, trans1.ToAccountID, trans2.ToAccountID)
 	require.Equal(t, arg.Amount, trans2.Amount)
-	require.Equal(t, trans1.CreateAt, trans2.CreateAt)
+	require.Equal(t, trans1.CreatedAt, trans2.CreatedAt)
 }
 
 func TestDeleteTransfer(t *testing.T) {

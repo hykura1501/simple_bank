@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hykura1501/simple_bank/ulti"
+	"github.com/hykura1501/simple_bank/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 )
@@ -14,7 +14,7 @@ func createRandomEntry(t *testing.T) Entry {
 
 	arg := CreateEntryParams{
 		AccountID: acc.ID,
-		Amount:    ulti.RandomMoney(),
+		Amount:    util.RandomMoney(),
 	}
 
 	en, err := testQueries.CreateEntry(context.Background(), arg)
@@ -25,7 +25,7 @@ func createRandomEntry(t *testing.T) Entry {
 	require.Equal(t, arg.Amount, en.Amount)
 
 	require.NotZero(t, en.ID)
-	require.NotZero(t, en.CreateAt)
+	require.NotZero(t, en.CreatedAt)
 
 	return en
 }
@@ -44,7 +44,7 @@ func TestGetEntry(t *testing.T) {
 	require.Equal(t, en1.ID, en2.ID)
 	require.Equal(t, en1.AccountID, en2.AccountID)
 	require.Equal(t, en1.Amount, en2.Amount)
-	require.Equal(t, en1.CreateAt, en2.CreateAt)
+	require.Equal(t, en1.CreatedAt, en2.CreatedAt)
 }
 
 func TestUpdateEntry(t *testing.T) {
@@ -52,7 +52,7 @@ func TestUpdateEntry(t *testing.T) {
 
 	arg := UpdateEntryParams{
 		ID:     en1.ID,
-		Amount: ulti.RandomMoney(),
+		Amount: util.RandomMoney(),
 	}
 
 	en2, err := testQueries.UpdateEntry(context.Background(), arg)
@@ -63,7 +63,7 @@ func TestUpdateEntry(t *testing.T) {
 	require.Equal(t, en1.ID, en2.ID)
 	require.Equal(t, en1.AccountID, en2.AccountID)
 	require.Equal(t, arg.Amount, en2.Amount)
-	require.Equal(t, en1.CreateAt, en2.CreateAt)
+	require.Equal(t, en1.CreatedAt, en2.CreatedAt)
 }
 
 func TestDeleteEntry(t *testing.T) {

@@ -12,7 +12,7 @@ import (
 	"github.com/golang/mock/gomock"
 	mockdb "github.com/hykura1501/simple_bank/db/mock"
 	db "github.com/hykura1501/simple_bank/db/sqlc"
-	"github.com/hykura1501/simple_bank/ulti"
+	"github.com/hykura1501/simple_bank/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 )
@@ -24,10 +24,10 @@ func TestCreateTransfer(t *testing.T) {
 	fromAcc := acc1
 	toAcc := acc2
 	amount := int64(10)
-	currency := ulti.USD
+	currency := util.USD
 
-	fromAcc.Currency = ulti.USD
-	toAcc.Currency = ulti.USD
+	fromAcc.Currency = util.USD
+	toAcc.Currency = util.USD
 
 	fromAcc.Balance -= amount
 	toAcc.Balance += amount
@@ -73,7 +73,7 @@ func TestCreateTransfer(t *testing.T) {
 		FromAccountID: fromAcc.ID,
 		ToAccountID:   toAcc.ID,
 		Amount:        amount,
-		Currency:      ulti.VND,
+		Currency:      util.VND,
 	}
 
 	argTransfer := db.CreateTransferParams{
