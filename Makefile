@@ -7,6 +7,9 @@ createdb:
 dropdb: 
 	docker exec -it postgres dropdb simple_bank
 
+startdb:
+	docker start postgres
+
 migrateup:
 	migrate -path db/migration -database "postgresql://root:root@localhost:5432/simple_bank?sslmode=disable" -verbose up
 
@@ -32,4 +35,4 @@ run:
 mock:
 	mockgen -destination=db/mock/store.go -package=mockdb github.com/hykura1501/simple_bank/db/sqlc Store
 
-.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 sqlc test run mock
+.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 sqlc test run mock startdb
