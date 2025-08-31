@@ -8,18 +8,22 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	mockdb "github.com/hykura1501/simple_bank/db/mock"
 	db "github.com/hykura1501/simple_bank/db/sqlc"
+	"github.com/hykura1501/simple_bank/token"
 	"github.com/hykura1501/simple_bank/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCreateTransfer(t *testing.T) {
-	acc1 := randomAccount()
-	acc2 := randomAccount()
+	user1, _ := randomUser(t)
+	user2, _ := randomUser(t)
+	acc1 := randomAccount(user1.Username)
+	acc2 := randomAccount(user2.Username)
 
 	fromAcc := acc1
 	toAcc := acc2
@@ -93,12 +97,16 @@ func TestCreateTransfer(t *testing.T) {
 	testCases := []struct {
 		name            string
 		transferRequest transferRequest
+		setupAuth       func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 		buildStubs      func(store *mockdb.MockStore)
 		checkResponse   func(t *testing.T, recorder *httptest.ResponseRecorder)
 	}{
 		{
 			name:            "OK",
 			transferRequest: req,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, fromAcc.Owner, time.Minute)
+			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetAccount(gomock.Any(), fromAcc.ID).Times(1).Return(fromAcc, nil)
 				store.EXPECT().GetAccount(gomock.Any(), toAcc.ID).Times(1).Return(toAcc, nil)
@@ -116,6 +124,9 @@ func TestCreateTransfer(t *testing.T) {
 		{
 			name:            "InvalidID",
 			transferRequest: invalidIDReq,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, fromAcc.Owner, time.Minute)
+			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetAccount(gomock.Any(), gomock.Any()).Times(0)
 
@@ -128,6 +139,9 @@ func TestCreateTransfer(t *testing.T) {
 		{
 			name:            "InvalidAmount",
 			transferRequest: invalidAmountReq,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, fromAcc.Owner, time.Minute)
+			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetAccount(gomock.Any(), gomock.Any()).Times(0)
 
@@ -140,6 +154,9 @@ func TestCreateTransfer(t *testing.T) {
 		{
 			name:            "NotFoundFromAcc",
 			transferRequest: req,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, fromAcc.Owner, time.Minute)
+			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetAccount(gomock.Any(), fromAcc.ID).Times(1).Return(db.Account{}, pgx.ErrNoRows)
 				store.EXPECT().TransferTx(gomock.Any(), gomock.Any()).Times(0)
@@ -151,6 +168,9 @@ func TestCreateTransfer(t *testing.T) {
 		{
 			name:            "NotFoundToAcc",
 			transferRequest: req,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, fromAcc.Owner, time.Minute)
+			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetAccount(gomock.Any(), fromAcc.ID).Times(1).Return(fromAcc, nil)
 				store.EXPECT().GetAccount(gomock.Any(), toAcc.ID).Times(1).Return(db.Account{}, pgx.ErrNoRows)
@@ -163,6 +183,9 @@ func TestCreateTransfer(t *testing.T) {
 		{
 			name:            "InternalError_1",
 			transferRequest: req,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, fromAcc.Owner, time.Minute)
+			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetAccount(gomock.Any(), fromAcc.ID).Times(1).Return(db.Account{}, sql.ErrConnDone)
 				store.EXPECT().TransferTx(gomock.Any(), gomock.Any()).Times(0)
@@ -174,6 +197,9 @@ func TestCreateTransfer(t *testing.T) {
 		{
 			name:            "InternalError_2",
 			transferRequest: req,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, fromAcc.Owner, time.Minute)
+			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetAccount(gomock.Any(), fromAcc.ID).Times(1).Return(fromAcc, nil)
 				store.EXPECT().GetAccount(gomock.Any(), toAcc.ID).Times(1).Return(toAcc, nil)
@@ -186,6 +212,9 @@ func TestCreateTransfer(t *testing.T) {
 		{
 			name:            "InvalidCurrency",
 			transferRequest: invalidCurrencyReq,
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, fromAcc.Owner, time.Minute)
+			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetAccount(gomock.Any(), fromAcc.ID).Times(1).Return(fromAcc, nil)
 				// store.EXPECT().GetAccount(gomock.Any(), toAcc.ID).Times(0)
@@ -206,7 +235,8 @@ func TestCreateTransfer(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			// build stubs
 			tc.buildStubs(store)
-			server := NewServer(store)
+			server := newTestServer(t, store)
+
 			recorder := httptest.NewRecorder()
 
 			url := "/transfers"
@@ -215,7 +245,7 @@ func TestCreateTransfer(t *testing.T) {
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(bodyData))
 
 			require.NoError(t, err)
-
+			tc.setupAuth(t, request, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
 			tc.checkResponse(t, recorder)
 		})
