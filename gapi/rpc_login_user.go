@@ -2,7 +2,6 @@ package gapi
 
 import (
 	"context"
-	"net"
 
 	db "github.com/hykura1501/simple_bank/db/sqlc"
 	"github.com/hykura1501/simple_bank/pb"
@@ -11,35 +10,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
-
-// getClientIP extracts the client IP from gRPC context
-func getClientIP(ctx context.Context) string {
-	if p, ok := peer.FromContext(ctx); ok {
-		addr := p.Addr.String()
-		// addr thường có dạng "ip:port", nên tách ra chỉ lấy IP
-		if host, _, err := net.SplitHostPort(addr); err == nil {
-			return host
-		}
-		return addr
-	}
-	return ""
-}
-
-// getUserAgent extracts the user-agent from gRPC metadata
-func getUserAgent(ctx context.Context) string {
-	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		ua := md.Get("user-agent")
-		if len(ua) > 0 {
-			return ua[0]
-		}
-	}
-	return ""
-}
 
 func (server *Server) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (*pb.LoginUserResponse, error) {
 	user, err := server.store.GetUser(ctx, req.GetUsername())
@@ -65,12 +38,14 @@ func (server *Server) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (
 		return nil, status.Errorf(codes.Internal, "cannot create refresh token: %s", err)
 	}
 
+	metadata := extractMetadataFromContext(ctx)
+
 	arg := db.CreateSessionParams{
 		ID:           refreshTokenPayload.ID,
 		Username:     req.GetUsername(),
 		RefreshToken: refreshToken,
-		UserAgent:    getUserAgent(ctx),
-		ClientIp:     getClientIP(ctx),
+		UserAgent:    metadata.UserAgent,
+		ClientIp:     metadata.ClientIP,
 		IsBlocked:    false,
 		ExpiredAt: pgtype.Timestamptz{
 			Time:  refreshTokenPayload.ExpiredAt,
